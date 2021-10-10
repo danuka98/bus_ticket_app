@@ -1,9 +1,15 @@
+import 'package:csse/model/user.dart';
+import 'package:csse/provider/auth_provider.dart';
+import 'package:csse/provider/user_provider.dart';
 import 'package:csse/reuseable/text_field.dart';
 import 'package:csse/screens/home.dart';
 import 'package:csse/screens/register.dart';
 import 'package:csse/styles/constants.dart';
+import 'package:csse/utility/validator.dart';
+import 'package:flushbar/flushbar.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 
 class Login extends StatefulWidget {
   const Login({Key? key}) : super(key: key);
@@ -14,6 +20,11 @@ class Login extends StatefulWidget {
 
 class _LoginState extends State<Login> {
   late double widthScale, heightScale, width, height;
+
+  final formKey = GlobalKey<FormState>();
+
+  late String _phoneNumber, _password;
+
 
   @override
   Widget build(BuildContext context) {
@@ -29,6 +40,57 @@ class _LoginState extends State<Login> {
     height = MediaQuery.of(context).size.height;
     widthScale = MediaQuery.of(context).size.width / 207;
     heightScale = MediaQuery.of(context).size.height / 448;
+
+    AuthProvider auth = Provider.of<AuthProvider>(context);
+
+    var loading = Padding(
+      padding: EdgeInsets.only(
+        bottom: widthScale * 15,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(),
+          Text("Login.... Please wait"),
+        ],
+      ),
+    );
+
+    var doLogin = () {
+
+      final form = formKey.currentState;
+
+      if(form!.validate()){
+
+        form.save();
+        print(_phoneNumber);
+        print(_password);
+
+       final Future<Map<String,dynamic>> response = auth.login(_phoneNumber,_password);
+       
+       response.then((response){
+         if(response['status']){
+           print("========================works======================");
+           User user = response['user'];
+           Provider.of<UserProvider>(context,listen: false).setUser(user);
+           Navigator.pushReplacementNamed(context, '/home');
+         }else{
+           Flushbar(
+             title: 'Registration Faild',
+             message: response.toString(),
+             duration: Duration(seconds: 10),
+           ).show(context);
+         }
+       });
+
+      }else{
+        Flushbar(
+          title: 'Invalid form',
+          message: 'Please complet the form properly',
+          duration: Duration(seconds: 10),
+        ).show(context);
+      }
+    };
 
     return Padding(
       padding: EdgeInsets.only(
@@ -55,13 +117,90 @@ class _LoginState extends State<Login> {
               child: Image.asset('assets/images/login.jpg',width: widthScale * 100, height: heightScale * 100,),
             ),
           ),
-          Padding(
-            padding: EdgeInsets.only(
-                top: widthScale * 30,
+
+          Form(
+            key: formKey,
+            child: Column(
+              children: <Widget>[
+                Padding(
+                  padding: EdgeInsets.only(
+                    top: widthScale * 30,
+                    left: widthScale * 20,
+                    right: widthScale * 20,
+                    bottom: heightScale * 8,
+                  ),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(width: 1,color: kDarkBlue.withOpacity(0.4),),
+                      color: kWhite,
+                    ),
+                    child: Padding(
+                      padding: EdgeInsets.only(
+                          left: widthScale *10
+                      ),
+                      child: TextFormField(
+                        autofocus: false,
+                        validator: (value) => value!.isEmpty ? "Please Enter Phone Number" : null,
+                        onSaved: (value) => _phoneNumber = value!,
+                        style: TextStyle(color: kDarkBlue),
+                        decoration: InputDecoration(
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          hintText: 'Phone Number',
+                          hintStyle: GoogleFonts.roboto(
+                            textStyle: TextStyle(
+                              color: kDarkBlue.withOpacity(0.4),
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: EdgeInsets.only(
+                    left: widthScale * 20,
+                    right: widthScale * 20,
+                    bottom: heightScale * 8,
+                  ),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(width: 1,color: kDarkBlue.withOpacity(0.4),),
+                      color: kWhite,
+                    ),
+                    child: Padding(
+                      padding: EdgeInsets.only(
+                          left: widthScale *10
+                      ),
+                      child: TextFormField(
+                        autofocus: false,
+                        obscureText: true,
+                        validator: (value) => value!.isEmpty ? "Please Enter Password" : null,
+                        onSaved: (value) => _password = value!,
+                        style: TextStyle(color: kDarkBlue),
+                        decoration: InputDecoration(
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          hintText: 'Password',
+                          hintStyle: GoogleFonts.roboto(
+                            textStyle: TextStyle(
+                              color: kDarkBlue.withOpacity(0.4),
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-            child: const TextFieldRounded(placeHolder: "Email Address"),
           ),
-          const TextFieldRounded(placeHolder: "Password"),
+
+          auth.loggedInStatus == Status.authenticating ? loading :
           Padding(
             padding: EdgeInsets.only(
               left: widthScale * 20,
@@ -70,12 +209,7 @@ class _LoginState extends State<Login> {
               bottom: widthScale * 20
             ),
             child: GestureDetector(
-              onTap: (){
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const HomePage()),
-                );
-              },
+              onTap: doLogin,
               child: Container(
                 width: width,
                 height: heightScale * 30,
@@ -100,10 +234,7 @@ class _LoginState extends State<Login> {
           ),
           GestureDetector(
             onTap: (){
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const Register()),
-              );
+              Navigator.pushReplacementNamed(context, '/register');
             },
             child: Text(
               "Don't have an account",

@@ -5,9 +5,11 @@ import 'package:google_fonts/google_fonts.dart';
 class TextFieldRounded extends StatelessWidget {
 
   final String placeHolder;
+  final Color color;
 
   const TextFieldRounded({
     required this.placeHolder,
+    required this.color,
   });
 
   @override
@@ -19,12 +21,13 @@ class TextFieldRounded extends StatelessWidget {
       padding: EdgeInsets.only(
         left: widthScale * 20,
         right: widthScale * 20,
-        bottom: heightScale * 10,
+        bottom: heightScale * 8,
       ),
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
           border: Border.all(width: 1,color: kDarkBlue.withOpacity(0.4),),
+          color: color,
         ),
         child: Padding(
           padding: EdgeInsets.only(
